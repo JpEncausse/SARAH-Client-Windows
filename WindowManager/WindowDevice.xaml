@@ -1,0 +1,38 @@
+﻿<Window x:Class="net.encausse.sarah.window.WindowDevice"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Device" Width="900" Height="510" Loaded="WindowLoaded" ResizeMode="NoResize" ShowInTaskbar="False">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Border Name="ImageBorder" Grid.Column="0" Width="640" Height="480" BorderThickness="1" BorderBrush="Black"  Margin="0" HorizontalAlignment="Right" VerticalAlignment="Top">
+            <Image Name="Image" Width="640" Height="480" Stretch="None" Panel.ZIndex="1" />
+        </Border>
+        <Canvas Name="Wrapper" Grid.Column="0" Width="640" Height="480" Margin="0" HorizontalAlignment="Right" VerticalAlignment="Top" 
+                MouseDown="Grid_MouseDown" MouseUp="Grid_MouseUp" MouseMove="Grid_MouseMove" Panel.ZIndex="1" Background="Transparent">
+            <!-- This canvas is overlaid over the previous canvas and is used to 
+                place the rectangle that implements the drag selection box. -->
+            <Rectangle
+                x:Name="selectionBox"
+                Visibility="Collapsed"
+                Stroke="Yellow"
+                StrokeThickness="2"
+                />
+        </Canvas>
+        <ScrollViewer Grid.Column="1"  VerticalScrollBarVisibility="Visible">
+            <StackPanel Name="Sidebar" Margin="10 0 10 0">
+            <GroupBox>
+                <GroupBox.Header>
+                    <Label>Ticks</Label >
+                </GroupBox.Header>
+                <StackPanel Name="Ticks">
+                    <TextBlock Name="Repaint"  Text ="Repaint: " FontWeight ="Bold"/>
+                </StackPanel>
+            </GroupBox>
+        </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Window>

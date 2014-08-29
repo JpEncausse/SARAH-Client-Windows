@@ -1,0 +1,12 @@
+﻿<grammar version="1.0" xml:lang="fr-FR" mode="voice"  root="ruleTestLazy" xmlns="http://www.w3.org/2001/06/grammar" tag-format="semantics/1.0">
+  <rule id="ruleTestLazy" scope="public">
+    <example>Veux-tu faire un test ?</example>
+    <tag>out.action=new Object(); </tag>
+    <item>Sarah</item> 
+    <one-of>
+      <item>lance encore le test deux<tag>out.action.test="L1";</tag></item>
+      <item>lance un autre test trois<tag>out.action.test="L2";</tag></item>
+    </one-of>
+    <tag>out.action._attributes.uri="http://127.0.0.1:8080/sarah/test";</tag>
+  </rule>
+</grammar>

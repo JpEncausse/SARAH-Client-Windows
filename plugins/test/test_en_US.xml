@@ -1,0 +1,12 @@
+﻿<grammar version="1.0" xml:lang="en-US" mode="voice"  root="ruleTest" xmlns="http://www.w3.org/2001/06/grammar" tag-format="semantics/1.0">
+  <rule id="ruleTest" scope="public">
+    <example>Do you want to do a test ?</example>
+    <tag>out.action=new Object(); </tag>
+    <item>Sarah</item>
+    <one-of>
+      <item>do a simple test <tag>out.action.test="E1";</tag></item>
+      <item>do an other test <tag>out.action.test="E2";</tag></item>
+    </one-of>
+    <tag>out.action._attributes.uri="http://127.0.0.1:8080/sarah/test";</tag>
+  </rule>
+</grammar>

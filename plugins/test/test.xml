@@ -1,0 +1,13 @@
+﻿<grammar version="1.0" xml:lang="fr-FR" mode="voice"  root="ruleTest" xmlns="http://www.w3.org/2001/06/grammar" tag-format="semantics-ms/1.0">
+  <rule id="ruleTest" scope="public">
+    <example>Veux-tu [really] faire un autre test [name] ?</example>
+    <tag>$.action=new Object();</tag>
+      <item>Sarah</item>
+    <one-of>
+      <item>fait un test <tag>$.action.test="AX"; $.action._attributes.tts="c'est bien ça marche";</tag></item>
+      <item>encore un autre test deux<tag>$.action.test="A2";</tag></item>
+      <item>peux tu me faire un test <tag>$.action.test="A3";</tag></item>
+    </one-of>
+    <tag>$.action._attributes.uri="http://127.0.0.1:8080/sarah/test";</tag>
+  </rule>
+</grammar>

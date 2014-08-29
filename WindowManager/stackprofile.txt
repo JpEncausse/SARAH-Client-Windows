@@ -1,0 +1,49 @@
+﻿        <StackPanel Grid.Column="0" Grid.Row="1" Name="Profile" Orientation="Horizontal" Margin="0,480,0,0" >
+            <GroupBox Name="profile1">
+                <GroupBox.Header>
+                    <Label FontWeight="Bold">Profile 1</Label ></GroupBox.Header>
+                <StackPanel>
+                    <TextBlock Name="key11"  Text ="profile" />
+                    <TextBlock Name="key12"  Text ="profile" />
+                    <TextBlock Name="key13"  Text ="profile" />
+                    <TextBlock Name="key14"  Text ="profile" />
+                    <TextBlock Name="key15"  Text ="profile" />
+                </StackPanel>
+            </GroupBox>
+            <GroupBox Name="profile2">
+                <GroupBox.Header>
+                    <Label FontWeight="Bold">Profile 1</Label >
+                </GroupBox.Header>
+                <StackPanel>
+                    <TextBlock Name="key21"  Text ="profile" />
+                    <TextBlock Name="key22"  Text ="profile" />
+                    <TextBlock Name="key23"  Text ="profile" />
+                    <TextBlock Name="key24"  Text ="profile" />
+                    <TextBlock Name="key25"  Text ="profile" />
+                </StackPanel>
+            </GroupBox>
+            <GroupBox Name="profile3">
+                <GroupBox.Header>
+                    <Label FontWeight="Bold">Profile 1</Label >
+                </GroupBox.Header>
+                <StackPanel>
+                    <TextBlock Name="key31"  Text ="profile" />
+                    <TextBlock Name="key32"  Text ="profile" />
+                    <TextBlock Name="key33"  Text ="profile" />
+                    <TextBlock Name="key34"  Text ="profile" />
+                    <TextBlock Name="key35"  Text ="profile" />
+                </StackPanel>
+            </GroupBox>
+            <GroupBox Name="profile4">
+                <GroupBox.Header>
+                    <Label FontWeight="Bold">Profile 1</Label >
+                </GroupBox.Header>
+                <StackPanel>
+                    <TextBlock Name="key41"  Text ="profile" />
+                    <TextBlock Name="key42"  Text ="profile" />
+                    <TextBlock Name="key43"  Text ="profile" />
+                    <TextBlock Name="key44"  Text ="profile" />
+                    <TextBlock Name="key45"  Text ="profile" />
+                </StackPanel>
+            </GroupBox>
+        </StackPanel>
