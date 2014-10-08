@@ -55,8 +55,6 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AbstractAddOnKinect.cs" />
-    <Compile Include="IAddOnKinect.cs" />
     <Compile Include="Kinect.cs" />
     <Compile Include="KinectManager.cs" />
     <Compile Include="AddOn.cs" />
@@ -79,6 +77,7 @@
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

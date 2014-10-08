@@ -1,0 +1,229 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        "NativeDllWinRT_Win8.1"
+    </assembly>
+    <members>
+        <member name="M:WindowsPreview.Media.Ocr.OcrEngine.RecognizeAsync(System.UInt32,System.UInt32,System.Byte[])">
+            <summary>
+Performs OCR on the given BGRA image. Each image dimension must be between 40 and 2600 pixels.
+</summary>
+            <param name="height">Image height.</param>
+            <param name="width">Image width.</param>
+            <param name="pixelsArray">Image pixels in BGRA pixel format.</param>
+            <exception cref="T:Platform.OutOfMemoryException">
+Thrown when there's insufficient memory to complete the operation.
+</exception>
+            <exception cref="T:Platform.InvalidArgumentException">
+Thrown when image dimensions are not correct.
+</exception>
+            <exception cref="T:Platform.NullReferenceException">
+Thrown when provided pixels array is a null object reference.
+</exception>
+            <exception cref="T:Platform.COMException">
+Thrown with HResult E_HANDLE when resource file is corrupted.
+</exception>
+            <exception cref="T:Platform.COMException">
+Thrown with HResult E_CHANGED_SATE when invoked concurrently.
+</exception>
+        </member>
+        <member name="P:WindowsPreview.Media.Ocr.OcrEngine.Language">
+            <summary>
+Sets the language used in text recognition.
+</summary>
+            <exception cref="T:Platform.InvalidArgumentException">
+Thrown when language is not supported by resource file.
+</exception>
+        </member>
+        <member name="M:WindowsPreview.Media.Ocr.OcrEngine.#ctor(WindowsPreview.Media.Ocr.OcrLanguage)">
+            <summary>
+Initializes a new instance of OCR engine. All required resources have to be included with the app.
+</summary>
+            <param name="language">
+Language used in text recognition. Can be changed using Language property.
+</param>
+            <exception cref="T:Platform.NullReferenceException">
+Thrown when resource file is not present.
+</exception>
+            <exception cref="T:Platform.InvalidArgumentException">
+Thrown when language is not supported by resource file.
+</exception>
+        </member>
+        <member name="T:WindowsPreview.Media.Ocr.OcrEngine">
+            <summary>
+Represents Optical Character Recognition (OCR) engine.
+</summary>
+        </member>
+        <member name="P:WindowsPreview.Media.Ocr.OcrResult.TextAngle">
+            <summary>
+Gets the angle, in degrees, of clockwise text rotation.
+Null if the angle was not detected.
+</summary>
+        </member>
+        <member name="P:WindowsPreview.Media.Ocr.OcrResult.Lines">
+            <summary>
+Gets recognized lines.
+</summary>
+        </member>
+        <member name="T:WindowsPreview.Media.Ocr.OcrResult">
+            <summary>
+Describes recognized text on image.
+</summary>
+        </member>
+        <member name="P:WindowsPreview.Media.Ocr.OcrLine.IsVertical">
+            <summary>
+Vertical line indicator (only in Japanese and Chinese Traditional).
+</summary>
+        </member>
+        <member name="P:WindowsPreview.Media.Ocr.OcrLine.Words">
+            <summary>
+Gets words that belong to line.
+</summary>
+        </member>
+        <member name="T:WindowsPreview.Media.Ocr.OcrLine">
+            <summary>
+Describes line of text detected on image.
+</summary>
+        </member>
+        <member name="P:WindowsPreview.Media.Ocr.OcrWord.Text">
+            <summary>
+Word text.
+</summary>
+        </member>
+        <member name="P:WindowsPreview.Media.Ocr.OcrWord.Height">
+            <summary>
+Word height in pixels.
+</summary>
+        </member>
+        <member name="P:WindowsPreview.Media.Ocr.OcrWord.Width">
+            <summary>
+Word width in pixels.
+</summary>
+        </member>
+        <member name="P:WindowsPreview.Media.Ocr.OcrWord.Top">
+            <summary>
+Distance from top of image in pixels (with text angle applied).
+</summary>
+        </member>
+        <member name="P:WindowsPreview.Media.Ocr.OcrWord.Left">
+            <summary>
+Distance from left side of image in pixels (with text angle applied).
+</summary>
+        </member>
+        <member name="T:WindowsPreview.Media.Ocr.OcrWord">
+            <summary>
+Describes word detected on image.
+</summary>
+        </member>
+        <member name="T:WindowsPreview.Media.Ocr.OcrLanguage">
+            <summary>
+Ocr languages.
+</summary>
+        </member>
+        <member name="F:WindowsPreview.Media.Ocr.OcrLanguage.Turkish">
+            <summary>
+Turkish.
+</summary>
+        </member>
+        <member name="F:WindowsPreview.Media.Ocr.OcrLanguage.Swedish">
+            <summary>
+Swedish.
+</summary>
+        </member>
+        <member name="F:WindowsPreview.Media.Ocr.OcrLanguage.Spanish">
+            <summary>
+Spanish.
+</summary>
+        </member>
+        <member name="F:WindowsPreview.Media.Ocr.OcrLanguage.Russian">
+            <summary>
+Russian.
+</summary>
+        </member>
+        <member name="F:WindowsPreview.Media.Ocr.OcrLanguage.Portuguese">
+            <summary>
+Portuguese.
+</summary>
+        </member>
+        <member name="F:WindowsPreview.Media.Ocr.OcrLanguage.Polish">
+            <summary>
+Polish.
+</summary>
+        </member>
+        <member name="F:WindowsPreview.Media.Ocr.OcrLanguage.Norwegian">
+            <summary>
+Norwegian.
+</summary>
+        </member>
+        <member name="F:WindowsPreview.Media.Ocr.OcrLanguage.Korean">
+            <summary>
+Korean.
+</summary>
+        </member>
+        <member name="F:WindowsPreview.Media.Ocr.OcrLanguage.Japanese">
+            <summary>
+Japanese.
+</summary>
+        </member>
+        <member name="F:WindowsPreview.Media.Ocr.OcrLanguage.Italian">
+            <summary>
+Italian.
+</summary>
+        </member>
+        <member name="F:WindowsPreview.Media.Ocr.OcrLanguage.Hungarian">
+            <summary>
+Hungarian.
+</summary>
+        </member>
+        <member name="F:WindowsPreview.Media.Ocr.OcrLanguage.Greek">
+            <summary>
+Greek.
+</summary>
+        </member>
+        <member name="F:WindowsPreview.Media.Ocr.OcrLanguage.German">
+            <summary>
+German.
+</summary>
+        </member>
+        <member name="F:WindowsPreview.Media.Ocr.OcrLanguage.French">
+            <summary>
+French.
+</summary>
+        </member>
+        <member name="F:WindowsPreview.Media.Ocr.OcrLanguage.Finnish">
+            <summary>
+Finnish.
+</summary>
+        </member>
+        <member name="F:WindowsPreview.Media.Ocr.OcrLanguage.English">
+            <summary>
+English.
+</summary>
+        </member>
+        <member name="F:WindowsPreview.Media.Ocr.OcrLanguage.Dutch">
+            <summary>
+Dutch.
+</summary>
+        </member>
+        <member name="F:WindowsPreview.Media.Ocr.OcrLanguage.Danish">
+            <summary>
+Danish.
+</summary>
+        </member>
+        <member name="F:WindowsPreview.Media.Ocr.OcrLanguage.Czech">
+            <summary>
+Czech.
+</summary>
+        </member>
+        <member name="F:WindowsPreview.Media.Ocr.OcrLanguage.ChineseTraditional">
+            <summary>
+Chinese Traditional.
+</summary>
+        </member>
+        <member name="F:WindowsPreview.Media.Ocr.OcrLanguage.ChineseSimplified">
+            <summary>
+Chinese Simplified.
+</summary>
+        </member>
+    </members>
+</doc>

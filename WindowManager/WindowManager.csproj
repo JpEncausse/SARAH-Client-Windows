@@ -58,6 +58,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="WindowDescriptor.cs" />
     <Compile Include="WindowDevice.xaml.cs">
       <DependentUpon>WindowDevice.xaml</DependentUpon>
     </Compile>

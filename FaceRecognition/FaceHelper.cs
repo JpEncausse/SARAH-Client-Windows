@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using Emgu.CV;
 using Emgu.CV.UI;
 using Emgu.CV.Structure;
+using Emgu.CV.Face;
 
 namespace net.encausse.sarah.face {
   public class FaceHelper : IDisposable {
@@ -24,7 +25,6 @@ namespace net.encausse.sarah.face {
 
     public FaceHelper(int w, int h) {
       width = w; height = h;
-
       ratio = width / ConfigManager.GetInstance().Find("face.ratio", 640);
 
       InitHaarCascade();
@@ -63,7 +63,7 @@ namespace net.encausse.sarah.face {
       DetectImage.Bytes = pixels;
 
       // Convert it to Grayscale
-      GrayImage = DetectImage.Convert<Gray, Byte>().Resize(width / ratio, height / ratio, Emgu.CV.CvEnum.INTER.CV_INTER_CUBIC);
+      GrayImage = DetectImage.Convert<Gray, Byte>().Resize(width / ratio, height / ratio, Emgu.CV.CvEnum.Inter.Cubic);
       // GrayImage._EqualizeHist();
 
       // Detect faces
@@ -113,18 +113,30 @@ namespace net.encausse.sarah.face {
       trained = false;
       InitEigenFaceRecognizer();
     }
-    public float RecognizeDistance = 0;
-    public Rectangle[] RecognizeArea = new Rectangle[20];
-    public String[] RecognizeNames = new String[20];
-    public Image<Gray, byte>[] RecognizeThumbs = new Image<Gray, byte>[20];
-    public String[] Recognize() {
-      if (null == DetectFaces || null == GrayImage) { return null; }
-      Array.Clear(RecognizeNames, 0, RecognizeNames.Length);
 
+    public float RecognizeDistance = 0;
+    public Rectangle[] RecognizeArea = new Rectangle[10];
+    public String[] RecognizeNames = new String[10];
+    public Image<Gray, byte>[] RecognizeThumbs = new Image<Gray, byte>[10];
+    public String[] Recognize() {
+      
+      // Reset Names and Areas
+      Array.Clear(RecognizeNames, 0, RecognizeNames.Length);
+      for (int i = 0; i < RecognizeArea.Length; i++) {
+        RecognizeArea[i].X = 0;
+        RecognizeArea[i].Y = 0;
+        RecognizeArea[i].Width  = 0;
+        RecognizeArea[i].Height = 0;
+      }
+
+      // Prevent unknown faces
+      if (null == DetectFaces || null == GrayImage) { return null; }
+
+      // Set names and Areas
       for (int i = 0; i < DetectFaces.Length && i < RecognizeNames.Length; i++) {
 
         // Build a thumbnail
-        RecognizeThumbs[i] = GrayImage.Copy(DetectFaces[i]).Resize(100, 100, Emgu.CV.CvEnum.INTER.CV_INTER_CUBIC);
+        RecognizeThumbs[i] = GrayImage.Copy(DetectFaces[i]).Resize(100, 100, Emgu.CV.CvEnum.Inter.Cubic);
         RecognizeThumbs[i]._EqualizeHist();
 
         // Crop first only if not trained
@@ -133,12 +145,18 @@ namespace net.encausse.sarah.face {
         // Recognize
         FaceRecognizer.PredictionResult ER = Recognizer.Predict(RecognizeThumbs[i]);
 
-        RecognizeNames[i] = "Unknow";
+        RecognizeNames[i] = UNKNOWN;
         if (ER.Label >= 0) {
           RecognizeDistance = (float) ER.Distance;
           if (RecognizeDistance > Threshold) {
             RecognizeNames[i] = trainedLabels[ER.Label];
-            RecognizeArea[i] = DetectFaces[i];
+
+            // Build area according to ratio
+            Rectangle r = DetectFaces[i];
+            RecognizeArea[i].X      = r.X * ratio;
+            RecognizeArea[i].Y      = r.Y * ratio;
+            RecognizeArea[i].Width  = r.Width * ratio;
+            RecognizeArea[i].Height = r.Height * ratio;
           }
         }
 
@@ -167,6 +185,8 @@ namespace net.encausse.sarah.face {
     private List<string> trainedLabels = new List<string>();
     private List<Image<Gray, byte>> trainedImages = new List<Image<Gray, byte>>();
     private void InitTrainedFaces() {
+
+      // Load faces
       DirectoryInfo dir = new DirectoryInfo(@"AddOns\face\trained\");
       foreach (FileInfo f in dir.GetFiles("*.bmp")) {
         var lbl = f.Name.Substring(0, f.Name.IndexOf("-"));
@@ -174,6 +194,11 @@ namespace net.encausse.sarah.face {
         trainedLabels.Add(lbl);
         trainedImages.Add(img);
         trainedLabelIds.Add(trainedLabels.IndexOf(lbl));
+      }
+
+      // Init recognize area with Rectangle
+      for (var i = 0; i < RecognizeArea.Length; i++) {
+        RecognizeArea[i] = new Rectangle();
       }
     }
 
@@ -219,26 +244,24 @@ namespace net.encausse.sarah.face {
       return drawer;
     }
 
-    private Rectangle tmpRect = new Rectangle();
+
     public void DrawFaces(byte[] data, int width, int height) {
       var drawer = GetDrawer(width, height);
       drawer.Bytes = data;
 
-      for (int i = 0; i < DetectFaces.Length && i < RecognizeNames.Length; i++) {
+      for (int i = 0; i < RecognizeNames.Length && i < RecognizeNames.Length; i++) {
+        
+        var name = RecognizeNames[i];
+        var area = RecognizeArea[i];
+
+        if (area.Width <= 0) break;
 
         // Draw Rect
-        Rectangle r = DetectFaces[i];
-        tmpRect.X      = r.X * ratio;
-        tmpRect.Y      = r.Y * ratio;
-        tmpRect.Width  = r.Width  * ratio;
-        tmpRect.Height = r.Height * ratio;
-        r = tmpRect;
+        drawer.Draw(area, border, 2);
 
-        drawer.Draw(r, border, 2);
-
-        // Draw text
-        var rect = new Rectangle(r.X, r.Y + r.Height + 30, r.Width, r.Height);
-        DrawText(drawer, rect, RecognizeNames[i] != null ? RecognizeNames[i] : UNKNOWN);
+        // Draw Text
+        var rect = new Rectangle(area.X, area.Y + area.Height + 30, area.Width, area.Height);
+        DrawText(drawer, rect, name != null ? name : UNKNOWN);
       }
 
       Buffer.BlockCopy(drawer.Bytes, 0, data, 0, data.Length);

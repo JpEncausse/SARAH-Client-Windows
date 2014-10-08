@@ -12,21 +12,17 @@ namespace net.encausse.sarah.face {
   public class RecognizeTask : AbstractAddOnTask {
 
     private FaceHelper Helper;
-    public RecognizeTask(string device, FaceHelper helper)
-      : base(device) {
+    public RecognizeTask(TimeSpan dueTime, TimeSpan interval, FaceHelper helper)
+      : base(dueTime, interval) {
       Name = "Recognize";
       Helper = helper;
-    }
-
-    private ICollection<NBody> bodies;
-    public void SetBodies(ICollection<NBody> data) {
-      bodies = data;
     }
 
     // -------------------------------------------
     //  TASK
     // -------------------------------------------
 
+    private NBody[] cache = new NBody[6];
     private byte[] thumb = new byte[100 * 100];
     protected override void DoTask() {
       var names = Helper.Recognize();
@@ -37,15 +33,14 @@ namespace net.encausse.sarah.face {
         
         // Try to match a body
         var rect1 = Helper.GetArea(names[i]);
-        if (bodies != null) {
-          foreach(var body in bodies){
-            var head = body.GetJoint(NJointType.Head);
-            var rect2 = head.Area;
-            if (body.Name != null && names[i] == FaceHelper.UNKNOWN) { continue; }
-            if (rect1.IntersectsWith(rect2) || rect1.Contains(rect2) || rect2.Contains(rect1)) {
-              head.Area = rect1;
-              body.Name = names[i];
-            }
+
+        foreach (var body in Body.Cache(cache)) {
+          if (body == null) { continue;  }
+          var head = body.GetJoint(NJointType.Head);
+          var rect2 = head.Area;
+          if (body.Name != null && names[i] == FaceHelper.UNKNOWN) { continue; }
+          if (rect1.IntersectsWith(rect2) || rect1.Contains(rect2) || rect2.Contains(rect1)) {
+            body.Name = names[i];
           }
         }
 

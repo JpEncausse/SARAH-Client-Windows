@@ -66,9 +66,6 @@ namespace net.encausse.sarah.kinect1 {
 
       if (!ConfigManager.GetInstance().Find("kinect_v1.speech.speech_only", true)) {
 
-        // Motion Task
-        Task = new MotionTask(Name);
-
         // Config Gesture
         BeforeKinectStartGesture(Sensor);
 
@@ -185,25 +182,10 @@ namespace net.encausse.sarah.kinect1 {
       Log("FPSJoints: " + FPSJoints + " (" + (FPS / FPSJoints) + ")");
     }
 
-    // Skeleton
-    public Skeleton[] Skeletons { get; set; }
-    public Timestamp SkeletonStamp { get; set; }
-    public List<NBody> BodyData { get; set; }
-
-    // Color
-    public byte[] ColorDataRaw { get; set; }
-    public int ColorWidth, ColorHeight;
-    public ColorImageFormat ColorFormat { get; set; }
-    public Timestamp ColorStamp { get; set; }
-    // public ColorImagePoint[] ColorCoordinates { get; set; }
-    // public DepthImagePoint[] DepthCoordinates { get; set; }
-
-    // Depth
-    public short[] DepthData { get; set; }
-    public int DepthWidth, DepthHeight, DepthMin, DepthMax;
-    public DepthImagePixel[] DepthPixels { get; set; }
-    public DepthImageFormat DepthFormat { get; set; }
-    public Timestamp DepthStamp { get; set; }
+    private DepthFrame Depth;
+    private ColorFrame Color;
+    private BodyFrame Skeletons;
+    private ColorImageFormat ColorFormat;
 
     // Fps
     private int fpsGlobal   = 0;
@@ -230,9 +212,10 @@ namespace net.encausse.sarah.kinect1 {
 
         // Init ONCE with provided data
         InitFrames(depthFrame, colorFrame, skeletonFrame);
+        if (!init) { return; }
 
         // Backup frames (motion)
-        depthFrame.CopyPixelDataTo(this.DepthData);
+        depthFrame.CopyPixelDataTo(Depth.Pixelss);
 
         // Motion check
         if (Task == null || Task.StandBy) {
@@ -243,46 +226,24 @@ namespace net.encausse.sarah.kinect1 {
         // Copy computed depth
         if (++fpsDepth >= FPSDepth) {
           fpsDepth = 0;
-          depthFrame.CopyDepthImagePixelDataTo(this.DepthPixels);
-          DepthStamp.Time = System.DateTime.Now;
+          // depthFrame.CopyDepthImagePixelDataTo(this.DepthPixels);
+          Depth.Stamp.Time = System.DateTime.Now;
         }
 
         // Copy color data
         if (++fpsColor >= FPSColor) { fpsColor = 0;
-          colorFrame.CopyPixelDataTo(ColorDataRaw);
-          
-          
-          // Remove transparency
-          // for (int i = 0; i < this.ColorData.Length; i += 4) { this.ColorData[i] = 255; }
-
-          // Downgrade to bgr
-          // for (int i3, i4, i = 0; i < this.ColorDataRaw.Length / 4; i++) {
-          //  i3 = i * 3; i4 = i * 4;
-          //  ColorData[i3 + 0] = ColorDataRaw[i4 + 0];
-          //  ColorData[i3 + 1] = ColorDataRaw[i4 + 1];
-          //  ColorData[i3 + 2] = ColorDataRaw[i4 + 2];
-          // }
-
-          // Map color coordinate
-          // Sensor.CoordinateMapper.MapDepthFrameToColorFrame(DepthFormat, DepthPixels, ColorFormat, ColorCoordinates);
-          // Sensor.CoordinateMapper.MapColorFrameToDepthFrame(ColorFormat, DepthFormat, DepthPixels, DepthCoordinates);
-
-          // Clean with DepthFrame (experimental)
-          // if (Task.NoMotion != null) {
-            // Task.MaskDepth(DepthData, ColorData);
-          // }
-
-          ColorStamp.Time = System.DateTime.Now;
+          colorFrame.CopyPixelDataTo(Color.Pixels);
+          Color.Stamp.Time = System.DateTime.Now;
         }
 
         // Copy skeleton data
-        if (++fpsSkeleton >= FPSSkeleton && this.Skeletons != null) { fpsSkeleton = 0;
-          skeletonFrame.CopySkeletonDataTo(this.Skeletons);
-          SkeletonStamp.Time = System.DateTime.Now;
+        if (++fpsSkeleton >= FPSSkeleton) { fpsSkeleton = 0;
+          skeletonFrame.CopySkeletonDataTo((Skeleton[])Skeletons.RawData);
+          Skeletons.Stamp.Time = System.DateTime.Now;
         }
 
         // Convert Joint 3D to 2D on 1st skeleton
-        if (++fpsJoints >= FPSJoints && BodyData != null) { 
+        if (++fpsJoints >= FPSJoints) { 
           fpsJoints = 0;
           RefreshBodyData(Skeletons);
         }
@@ -299,47 +260,44 @@ namespace net.encausse.sarah.kinect1 {
     private void InitFrames(DepthImageFrame depthFrame, ColorImageFrame colorFrame, SkeletonFrame skeletonFrame) {
       if (init) { return; } init = true;
 
-      // Depth Frame
-      if (null == DepthPixels) {
-        DepthFormat = depthFrame.Format;
-        DepthStamp = new Timestamp();
-        DepthWidth = depthFrame.Width;
-        DepthHeight = depthFrame.Height;
-        DepthMin = depthFrame.MinDepth;
-        DepthMax = depthFrame.MaxDepth;
-        DepthData = new short[depthFrame.PixelDataLength];
-        DepthPixels = new DepthImagePixel[depthFrame.PixelDataLength];
-
-        var dueTime  = TimeSpan.FromMilliseconds(200);
-        var interval = TimeSpan.FromMilliseconds(ConfigManager.GetInstance().Find("kinect_v1.motion.ms", 100));
-        Task.SetDepth(DepthData, null, DepthWidth, DepthHeight);
-        Task.Start(dueTime, interval);
-
-        KinectManager.GetInstance().InitDepthFrame(Name, DepthData, DepthStamp, DepthWidth, DepthHeight, DepthMin, DepthMax);
-        KinectManager.GetInstance().InitDepthFrame(Name, DepthPixels, DepthData, DepthStamp, DepthWidth, DepthHeight, DepthMin, DepthMax);
-      }
-
       // Color Frame
-      if (null == ColorDataRaw) {
-        ColorFormat = colorFrame.Format;
-        ColorDataRaw = new byte[colorFrame.PixelDataLength];
-        ColorWidth = colorFrame.Width;
-        ColorHeight = colorFrame.Height;
-        ColorStamp = new Timestamp();
-        // ColorCoordinates  = new ColorImagePoint[DepthPixels.Length];
-        // DepthCoordinates = new DepthImagePoint[ColorWidth*ColorHeight];
+      Color = new ColorFrame();
+      Color.Width = colorFrame.Width;
+      Color.Height = colorFrame.Height;
+      Color.Pixels = new byte[colorFrame.PixelDataLength];
+      Color.Stamp = new Timestamp();
+      Color.Fps = FPS;
+      AddOnManager.GetInstance().InitFrame(Name, Color);
+      Log(Color.ToString());
+      ColorFormat = colorFrame.Format;
 
-        AddOnManager.GetInstance().InitColorFrame(Name, ColorDataRaw, ColorStamp, ColorWidth, ColorHeight, 12);
-      }
+      // Depth Frame
+      Depth = new DepthFrame();
+      Depth.Width = depthFrame.Width;
+      Depth.Height = depthFrame.Height;
+      Depth.Pixelss = new short[depthFrame.PixelDataLength];
+      Depth.Stamp = new Timestamp();
+      AddOnManager.GetInstance().InitFrame(Name, Depth);
+      Log(Depth.ToString());
+
+      var dueTime = TimeSpan.FromMilliseconds(200);
+      var interval = TimeSpan.FromMilliseconds(ConfigManager.GetInstance().Find("kinect_v1.motion.ms", 100));
+      Task = new MotionTask(dueTime, interval);
+      Task.Device = "";
+      Task.AddFrame(Depth);
+      Task.Start();
+
 
       // Skeleton Frame
-      if (null == Skeletons) {
-        SkeletonStamp = new Timestamp();
-        Skeletons = new Skeleton[skeletonFrame.SkeletonArrayLength];
-        BodyData = new List<NBody>(skeletonFrame.SkeletonArrayLength);
-        KinectManager.GetInstance().InitSkeletonFrame(Name, Skeletons, SkeletonStamp, ColorWidth, ColorHeight);
-        AddOnManager.GetInstance().InitBodyFrame(Name, BodyData, SkeletonStamp, ColorWidth, ColorHeight);
-      }
+      Skeletons = new BodyFrame();
+      Skeletons.Width  = colorFrame.Width;
+      Skeletons.Height = colorFrame.Height;
+      Skeletons.RawData = new Skeleton[6];
+      Skeletons.Bodies  = new List<NBody>(6);
+      Skeletons.Stamp = new Timestamp();
+      AddOnManager.GetInstance().InitFrame(Name, Skeletons);
+      Log(Skeletons.ToString());
+
     }
 
     // -------------------------------------------
@@ -347,24 +305,24 @@ namespace net.encausse.sarah.kinect1 {
     // -------------------------------------------
 
     private ICollection<NBody> cache = new List<NBody>();
-    private void RefreshBodyData(IList<Skeleton> skeletons) {
+    private void RefreshBodyData(BodyFrame frame) {
       cache.Clear();
-      foreach (var skeleton in skeletons) {
+      foreach (var skeleton in (IList<Skeleton>)frame.RawData) {
         if (skeleton.TrackingState != SkeletonTrackingState.Tracked) { continue; }
-        RefreshBodyData(skeleton);
-      }
-      lock (BodyData) {
-        BodyData.Clear();
-        BodyData.AddRange(cache);
-      }
-    }
 
-    private void RefreshBodyData(Skeleton skeleton) {
-      foreach (var nbody in BodyData) {
-        if ((int) nbody.TrackingId != skeleton.TrackingId) { continue; }
-        RefreshBodyData(skeleton, nbody); return;
+        NBody nbody = frame.Find(Convert.ToUInt64(skeleton.TrackingId));
+        if (nbody == null) {
+          nbody = new NBody(Convert.ToUInt64(skeleton.TrackingId), frame.Width, frame.Height);
+        }
+
+        cache.Add(nbody);
+        RefreshBodyData(skeleton, nbody);
       }
-      RefreshBodyData(skeleton, new NBody(skeleton.TrackingId));
+
+      lock (frame.Bodies) {
+        frame.Bodies.Clear();
+        frame.Bodies.AddRange(cache);
+      }
     }
 
     private void RefreshBodyData(Skeleton skeleton, NBody nbody) {
@@ -377,45 +335,12 @@ namespace net.encausse.sarah.kinect1 {
         var point = Sensor.CoordinateMapper.MapSkeletonPointToColorPoint(joint.Position, ColorFormat);
 
         njoint.Tracking = ResolveTrackingState(joint.TrackingState);
-        njoint.SetPosition3D(joint.Position.X, joint.Position.Y, joint.Position.Z);
         njoint.SetPosition2D(point.X, point.Y);
-
-        if (  njoint.Type == NJointType.Head
-           || njoint.Type == NJointType.HandRight
-           || njoint.Type == NJointType.HandLeft) {
-          njoint.SetJointRadius(ComputeJointRadius(joint));
-        }
+        njoint.SetPosition3D(joint.Position.X, joint.Position.Y, joint.Position.Z);
       }
 
       // Misc
       nbody.Tracking = NTrackingState.Tracked;
-    }
-
-    private int ComputeJointRadius(Joint joint) {
-      if (joint.TrackingState == JointTrackingState.NotTracked) { return 0; }
-      var pos = Sensor.CoordinateMapper.MapSkeletonPointToDepthPoint(joint.Position, DepthFormat);
-      var x0 = (int)pos.X; var y0 = (int)pos.Y;
-      if (x0 + y0 * DepthWidth > DepthData.Length) return 0;
-      var depth0 = DepthData[x0 + y0 * DepthWidth];
-
-      var x = ComputeJointRadius(x0, y0, depth0, DepthWidth, true);
-      var y = ComputeJointRadius(x0, y0, depth0, DepthWidth, false);
-
-      return (x0 - x) > (y0 - y) ? (x0 - x) * ColorWidth / DepthWidth
-                                 : (y0 - y) * ColorHeight / DepthHeight;
-    }
-
-    private int ComputeJointRadius(int x0, int y0, int depth0, int width, bool onX) {
-      var k0 = onX ? x0 : y0;
-      var i = k0;
-      for (var cpt = 0; i > 0; i--) {
-        var depthI = onX ? DepthData[i + y0 * DepthWidth]
-                         : DepthData[x0 + i * DepthWidth];
-        cpt = depth0 - depthI > 200 ? cpt + 1 : 0;
-        if (cpt >= 3) { return i; }
-        if (k0 - i > 100) { return k0; }
-      }
-      return k0;
     }
 
 

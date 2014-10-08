@@ -133,15 +133,9 @@ namespace net.encausse.sarah {
     //  IPLUGIN (camera management)
     // -------------------------------------------
 
-    public virtual void InitColorFrame(string device, byte[] data, Timestamp state, int width, int height, int fps) {
+    public virtual void InitFrame(string device, DeviceFrame frame) {
       foreach (IAddOn addon in AddOns) {
-        addon.InitColorFrame(device, data, state, width, height, fps);
-      }
-    }
-
-    public virtual void InitBodyFrame(string device, ICollection<NBody> data, Timestamp state, int width, int height) {
-      foreach (IAddOn addon in AddOns) {
-        addon.InitBodyFrame(device, data, state, width, height);
+        addon.InitFrame(device, frame);
       }
     }
 
@@ -255,9 +249,9 @@ namespace net.encausse.sarah {
       }
     }
 
-    public void RepaintColorFrame(string device, byte[] bgra, int width, int height) {
+    public void RepaintColorFrame(string device, byte[] pixels, int width, int height) {
       foreach (IAddOn addon in AddOns) {
-        addon.RepaintColorFrame(device, bgra, width, height);
+        addon.RepaintColorFrame(device, pixels, width, height);
       }
     }
 

@@ -120,6 +120,7 @@ namespace net.encausse.sarah.profile {
 
     private IDictionary<string,Label> labels = new Dictionary<string,Label>();
     public override void HandleSidebar(string device, StackPanel sidebar) {
+      if (sidebar.Name != "Sidebar") { return; }
       var text = new Label { Content = "" };
       var lbl = new Label { Content = "Profile" };
       var box = new GroupBox();

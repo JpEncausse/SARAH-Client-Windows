@@ -90,42 +90,5 @@ namespace net.encausse.sarah.kinect2 {
       return true;
     }
 
-    // -------------------------------------------
-    //  PLUGIN MANAGER 
-    // -------------------------------------------
-
-    public void InitDepthFrame(string device, ushort[] data, Timestamp state, int width, int height) {
-      foreach (IAddOn addon in AddOnManager.GetInstance().AddOns) {
-        if (addon is IAddOnKinect) {
-          ((IAddOnKinect)addon).InitDepthFrame(device, data, state, width, height);
-        }
-      }
-    }
-
-
-    public void InitBodyFrame(string device, IList<Body> data, Timestamp stamp) {
-      foreach (IAddOn addon in AddOnManager.GetInstance().AddOns) {
-        if (addon is IAddOnKinect) {
-          ((IAddOnKinect)addon).InitBodyFrame(device, data, stamp);
-        }
-      }
-    }
-
-    // -------------------------------------------
-    //  UI
-    // -------------------------------------------
-
-    public void HandleSidebar(string device, StackPanel sidebar) {
-      if (Sensors.ContainsKey(device)) {
-        Sensors[device].HandleSidebar(sidebar);
-      }
-    }
-
-    public void RepaintColorFrame(string device, byte[] bgr, int width, int height) {
-      if (Sensors.ContainsKey(device)) {
-        Sensors[device].RepaintColorFrame(bgr, width, height);
-      }
-    }
-
   }
 }

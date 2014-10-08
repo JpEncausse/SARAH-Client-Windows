@@ -17,8 +17,8 @@ namespace net.encausse.sarah.http {
     }
 
     public override void Dispose() {
-      HttpManager.GetInstance().Dispose();
       base.Dispose();
+      HttpManager.GetInstance().Dispose();
     }
 
     // ------------------------------------------

@@ -14,16 +14,14 @@ namespace net.encausse.sarah.body {
       Name = "BodyEngine";
     }
 
-    // ------------------------------------------
-    //  LIFE CYCLE
-    // ------------------------------------------
+    // -------------------------------------------
+    //  TASKS
+    // -------------------------------------------
 
-    public override void Dispose() {
-      foreach (var task in Tasks.Values) {
-        task.Dispose();
-      }
-      Tasks.Clear();
-      base.Dispose();
+    public override AbstractAddOnTask NewTask(string device) {
+      var dueTime = TimeSpan.FromMilliseconds(200);
+      var interval = TimeSpan.FromMilliseconds(ConfigManager.GetInstance().Find("body.threshold", 30));
+      return new AddOnTask(dueTime, interval);
     }
 
     // ------------------------------------------
@@ -60,36 +58,5 @@ namespace net.encausse.sarah.body {
       }
     }
 
-    // -------------------------------------------
-    //  UI
-    // -------------------------------------------
-
-    public override void HandleSidebar(string device, StackPanel sidebar) {
-      if (!Tasks.ContainsKey(device)) { return; }
-      Tasks[device].HandleSidebar(sidebar);
-    }
-
-    public override void RepaintColorFrame(string device, byte[] bgra, int width, int height) {
-      if (!Tasks.ContainsKey(device)) { return; }
-      Tasks[device].RepaintColorFrame(bgra, width, height);
-    }
-
-    // -------------------------------------------
-    //  BODY
-    // -------------------------------------------
-
-    public IDictionary<string, AddOnTask> Tasks = new Dictionary<string, AddOnTask>();
-    public override void InitBodyFrame(string device, ICollection<NBody> data, Timestamp stamp, int width, int height) {
-      base.InitBodyFrame(device, data, stamp, width, height);
-
-      var dueTime = TimeSpan.FromMilliseconds(200);
-      var interval = TimeSpan.FromMilliseconds(ConfigManager.GetInstance().Find("body.threshold", 30));
-
-      var task = new AddOnTask(device);
-      task.SetBodies(data, stamp, width, height);
-      task.Start(dueTime, interval);
-
-      Tasks.Add(device, task);
-    }
   }
 }

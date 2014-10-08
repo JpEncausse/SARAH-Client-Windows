@@ -22,6 +22,16 @@ namespace net.encausse.sarah.debug {
       SetupLogging();
     }
 
+    // -------------------------------------------
+    //  TASKS
+    // -------------------------------------------
+
+    public override AbstractAddOnTask NewTask(string device) {
+      var dueTime = TimeSpan.FromMilliseconds(200);
+      var interval = TimeSpan.FromMilliseconds(ConfigManager.GetInstance().Find("debug.threshold", 1000));
+      return new AddOnTask(dueTime, interval);
+    }
+
     // ------------------------------------------
     //  Logs Management
     // ------------------------------------------
@@ -32,18 +42,24 @@ namespace net.encausse.sarah.debug {
       
       LoggingConfiguration config = new LoggingConfiguration();
 
+      ColoredConsoleTarget consoleTarget = new ColoredConsoleTarget();
+      consoleTarget.Layout = "${date:format=HH\\:MM\\:ss} ${logger} ${message}";
+      config.AddTarget("console", consoleTarget);
+
       FileTarget fileTarget = new FileTarget();
       fileTarget.FileName = path;
       fileTarget.Layout = "${message}";
       fileTarget.CreateDirs = true;
-
       config.AddTarget("file", fileTarget);
+
+      LoggingRule rule1 = new LoggingRule("*", LogLevel.Info, consoleTarget);
+      config.LoggingRules.Add(rule1);
 
       LoggingRule rule2 = new LoggingRule("*", LogLevel.Info, fileTarget);
       config.LoggingRules.Add(rule2);
 
-      // LoggingRule rule3 = new LoggingRule("*", LogLevel.Debug, fileTarget);
-      // config.LoggingRules.Add(rule3);
+      LoggingRule rule3 = new LoggingRule("*", LogLevel.Warn, consoleTarget);
+      config.LoggingRules.Add(rule3);
 
       LoggingRule rule4 = new LoggingRule("*", LogLevel.Warn, fileTarget);
       config.LoggingRules.Add(rule4);
@@ -75,26 +91,6 @@ namespace net.encausse.sarah.debug {
       logger.Error("[{0}] [{1}]\t {2}", DateTime.Now.ToString("HH:mm:ss"), ctxt, ex);
     }
 
-
-    // -------------------------------------------
-    //  TASKS
-    // -------------------------------------------
-
-    public IDictionary<string, AddOnTask> Tasks = new Dictionary<string, AddOnTask>();
-
-    public override void InitColorFrame(string device, byte[] data, Timestamp stamp, int width, int height, int fps) {
-      base.InitColorFrame(device, data, stamp, width, height, fps);
-
-      var dueTime = TimeSpan.FromMilliseconds(200);
-      var interval = TimeSpan.FromMilliseconds(ConfigManager.GetInstance().Find("debug.threshold", 1000));
-
-      var task = new AddOnTask(device);
-      task.SetColor(data, stamp, width, height, fps);
-      task.Start(dueTime, interval);
-
-      Tasks.Add(device, task);
-    }
-
     // ------------------------------------------
     //  HTTP Management
     // ------------------------------------------
@@ -109,12 +105,12 @@ namespace net.encausse.sarah.debug {
 
         var device = parameters.Get("device");
         if (device != null) {
-          var path = Tasks[device].TakePicture(picture);
+          var path = ((AddOnTask)Tasks[device]).TakePicture(picture);
           writer.Write(path);
         } 
         else {
           foreach (var task in Tasks.Values) {
-            var path = task.TakePicture(picture);
+            var path = ((AddOnTask)task).TakePicture(picture);
             writer.Write(path);
           }
         }

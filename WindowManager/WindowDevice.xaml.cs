@@ -17,22 +17,17 @@ namespace net.encausse.sarah.window {
 
     private void WindowLoaded(object sender, System.Windows.RoutedEventArgs e) {
       AddOnManager.GetInstance().HandleSidebar(Name, this.Sidebar);
+      AddOnManager.GetInstance().HandleSidebar(Name, this.Footbar);
     }
 
     // ------------------------------------------
     //  CONSTRUCTOR
     // ------------------------------------------
 
-    private byte[] Pixels;
-    private Timestamp stamp;
-    private int width, height;
-
-    public WindowDevice(string name, byte[] data, Timestamp stamp, int width, int height) {
-      this.Name = name;
-      this.Pixels = data;
-      this.stamp = stamp;
-      this.width = width;
-      this.height = height;
+    private WindowDescriptor Descriptor;
+    public WindowDevice(WindowDescriptor descriptor) {
+      this.Descriptor = descriptor;
+      this.Name = Descriptor.Name;
       InitializeComponent();
     }
 
@@ -105,22 +100,27 @@ namespace net.encausse.sarah.window {
     private int w, h, stride;
     private Image<Bgra, Byte> scale;
     private byte[] drawer;
+    private double ratio;
 
     private void InitRepaint() {
       if (bitmap != null) return;
-      if (width == 0 || height == 0) return;
+      if (Descriptor == null) return;
 
-      drawer = new byte[Pixels.Length];
-      scale = new Image<Bgra, Byte>(width, height);
+      // Find Color Frame
+      ColorFrame color = (ColorFrame) Descriptor.Find(typeof(ColorFrame));
+      if (color == null) return;
+
+      drawer = new byte[color.Pixels.Length];
+      scale = new Image<Bgra, Byte>(color.Width, color.Height);
 
       // Image Width
       w = (int) this.Image.Width;
       h = (int) this.Image.Height;
 
       // Preserve ratio
-      var ratio = width / w > height / h ? width / w : height / h;
-      w = width / ratio;
-      h = height / ratio;
+      ratio = color.Width / w > color.Height / h ? color.Width / w : color.Height / h;
+      w = (int)(color.Width  / ratio);
+      h = (int)(color.Height / ratio);
       stride = w * format.BitsPerPixel / 8;
       rect = new Int32Rect(0, 0, w, h);
 
@@ -154,14 +154,19 @@ namespace net.encausse.sarah.window {
           InitRepaint();
 
           // Copy frame
-          Buffer.BlockCopy(Pixels, 0, drawer, 0, Pixels.Length);
+          ColorFrame color = (ColorFrame)Descriptor.Find(typeof(ColorFrame));
+          if (color != null) {
 
-          // Ask repaint to addons
-          AddOnManager.GetInstance().RepaintColorFrame(Name, drawer, width, height);
+            Buffer.BlockCopy(color.Pixels, 0, drawer, 0, color.Pixels.Length);
+         // Buffer.BlockCopy(Infrared, 0, drawer, 0, Infrared.Length);
+
+            // Ask repaint to addons
+            AddOnManager.GetInstance().RepaintColorFrame(Name, drawer, color.Width, color.Height);
+          }
 
           // Resize
           scale.Bytes = drawer;
-          var resize = scale.Resize(w, h, Emgu.CV.CvEnum.INTER.CV_INTER_LINEAR);
+          var resize = scale.Resize(w, h, Emgu.CV.CvEnum.Inter.Cubic);
           bitmap.WritePixels(rect, resize.Bytes, stride, 0);
 
           // Ticks
@@ -208,11 +213,12 @@ namespace net.encausse.sarah.window {
       // Hide the drag selection box.
       selectionBox.Visibility = Visibility.Collapsed;
 
-      var rect = new System.Drawing.Rectangle(
+      var rectBox = new System.Drawing.Rectangle(
                    (int)Canvas.GetLeft(selectionBox), (int)Canvas.GetTop(selectionBox),
-                   (int)selectionBox.Width, (int)selectionBox.Height);
+                   (int)selectionBox.Width,           (int)selectionBox.Height);
 
-      AddOnManager.GetInstance().HandleSelection(Name, rect);
+      var rectImg = new System.Drawing.Rectangle((int)(rectBox.X * ratio), (int)(rectBox.Y * ratio), (int)(rectBox.Width * ratio), (int)(rectBox.Height * ratio));
+      AddOnManager.GetInstance().HandleSelection(Name, rectImg);
     }
 
     private void Grid_MouseMove(object sender, MouseEventArgs e) {

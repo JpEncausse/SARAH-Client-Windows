@@ -11,14 +11,10 @@ namespace net.encausse.sarah.face {
   public class DetectTask : AbstractAddOnTask {
 
     private FaceHelper Helper;
-    public DetectTask(string device, FaceHelper helper)  : base(device) {
+    public DetectTask(TimeSpan dueTime, TimeSpan interval, FaceHelper helper)
+      : base(dueTime, interval) {
       Name = "Detection";
       Helper = helper;
-    }
-
-    private ICollection<NBody> bodies;
-    public void SetBodies(ICollection<NBody> data) { 
-      bodies = data;
     }
 
     // -------------------------------------------
@@ -28,7 +24,7 @@ namespace net.encausse.sarah.face {
     protected override void InitTask() { }
 
     protected override void DoTask() {
-      Helper.Detect(Color);
+      Helper.Detect(Color.Pixels);
     }
 
     // -------------------------------------------

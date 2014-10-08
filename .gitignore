@@ -222,11 +222,11 @@ BlobRecognition/
 DictationEngine/
 IPCamera/
 VideoRecorder/
+OCREngine/
 SARAH/custom.ini*
 SARAH/bootlog*
 SARAH/AddOns/
-SARAH/Libraries/*
-
+plugins/
 
 
 

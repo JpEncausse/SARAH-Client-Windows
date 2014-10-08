@@ -38,19 +38,5 @@ namespace net.encausse.sarah.kinect2 {
       return ready;
     }
 
-    // -------------------------------------------
-    //  UI
-    // -------------------------------------------
-
-    public override void HandleSidebar(string device, StackPanel sidebar) {
-      base.HandleSidebar(device, sidebar);
-      KinectManager.GetInstance().HandleSidebar(device, sidebar);
-    }
-
-    public override void RepaintColorFrame(string device, byte[] bgr, int width, int height) {
-      base.RepaintColorFrame(device, bgr, width, height);
-      KinectManager.GetInstance().RepaintColorFrame(device, bgr, width, height);
-    }
-
   }
 }

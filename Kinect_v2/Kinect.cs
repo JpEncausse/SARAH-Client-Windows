@@ -78,7 +78,6 @@ namespace net.encausse.sarah.kinect2 {
       return init;
     }
 
-
     private CoordinateMapper coordinateMapper = null;
 
     // Multi Frame Reader
@@ -86,6 +85,7 @@ namespace net.encausse.sarah.kinect2 {
 
     // Single Frame Reader
     private DepthFrameReader     dfr = null;
+    private InfraredFrameReader  xfr = null;
     private ColorFrameReader     cfr = null;
     private BodyFrameReader      bfr = null;
     private BodyIndexFrameReader ifr = null;
@@ -108,8 +108,9 @@ namespace net.encausse.sarah.kinect2 {
       }
 
       // Init single frame
-      StartDepthStream();
       StartColorStream();
+      StartDepthStream();
+      StartInfraredStream();
       StartBodyStream();
       StartBodyIndexStream();
 
@@ -123,6 +124,9 @@ namespace net.encausse.sarah.kinect2 {
       // Single Frame Reader
       dfr = Sensor.DepthFrameSource.OpenReader();
       dfr.FrameArrived += (object sender, DepthFrameArrivedEventArgs e) => { HandleDepthFrame(e.FrameReference); };
+
+      xfr = Sensor.InfraredFrameSource.OpenReader();
+      xfr.FrameArrived += (object sender, InfraredFrameArrivedEventArgs e) => { HandleInfraredFrame(e.FrameReference); };
 
       cfr = Sensor.ColorFrameSource.OpenReader();
       cfr.FrameArrived += (object sender, ColorFrameArrivedEventArgs e) => { HandleColorFrame(e.FrameReference); };
@@ -191,33 +195,34 @@ namespace net.encausse.sarah.kinect2 {
     //  DEPTH
     // ------------------------------------------
 
-    private FrameDescription depthDesc = null;
-    public ushort[] DepthData { get; set; }
-    public int DepthWidth, DepthHeight;
-    public Timestamp DepthStamp { get; set; }
-    public TimeSpan RelativeTime = TimeSpan.FromMilliseconds(0);
+    private DepthFrame Depth = null;
     public StopwatchAvg DepthWatch = new StopwatchAvg();
+    public TimeSpan RelativeTime = TimeSpan.FromMilliseconds(0);
 
     private void StartDepthStream() {
-      // Get frame description for the depth output
-      depthDesc = Sensor.DepthFrameSource.FrameDescription;
+      // Get frame description for the infr output
+      var description = Sensor.DepthFrameSource.FrameDescription;
 
-      // Init depth buffer
-      DepthWidth = depthDesc.Width;
-      DepthHeight = depthDesc.Height;
-      DepthData = new ushort[DepthWidth * DepthHeight];
-      DepthStamp = new Timestamp();
-      KinectManager.GetInstance().InitDepthFrame(Name, DepthData, DepthStamp, DepthWidth, DepthHeight);
-      Log("DepthWidth: " + DepthWidth + " DepthHeight: " + DepthHeight);
+      // Init infr buffer
+      DepthFrame frame = Depth = new DepthFrame();
+      frame.Width = description.Width;
+      frame.Height = description.Height;
+      frame.Pixels = new ushort[description.LengthInPixels];
+      frame.Stamp = new Timestamp();
+
+      AddOnManager.GetInstance().InitFrame(Name, frame);
+      Log(frame.ToString());
+
+      // Start Watch
+      DepthWatch = new StopwatchAvg();
     }
 
     private void HandleDepthFrame(DepthFrameReference reference) {
       DepthWatch.Again();
-      using (DepthFrame depthFrame = reference.AcquireFrame()) {
-        if (depthFrame == null) return;
-
-        depthFrame.CopyFrameDataToArray(DepthData);
-        DepthStamp.Time = System.DateTime.Now;
+      using (var frame = reference.AcquireFrame()) {
+        if (frame == null) return;
+        frame.CopyFrameDataToArray(Depth.Pixels);
+        Depth.Stamp.Time = System.DateTime.Now;
       }
       DepthWatch.Stop();
     }
@@ -225,53 +230,92 @@ namespace net.encausse.sarah.kinect2 {
     private void StartMotionTask() {
       var dueTime = TimeSpan.FromMilliseconds(200);
       var interval = TimeSpan.FromMilliseconds(ConfigManager.GetInstance().Find("kinect_v2.motion.ms", 100));
-      Task = new MotionTask(Name);
-      Task.SetDepth(DepthData, null, DepthWidth, DepthHeight);
-      Task.Start(dueTime, interval);
+      Task = new MotionTask(dueTime, interval);
+      Task.Device = "";
+      Task.AddFrame(Depth);
+      Task.Start();
+    }
+
+    // ------------------------------------------
+    //  INFRARED
+    // ------------------------------------------
+
+    private InfraredFrame Infrared = null;
+    public StopwatchAvg InfraredWatch = new StopwatchAvg();
+
+    private void StartInfraredStream() {
+      // Get frame description for the infr output
+      var description = Sensor.InfraredFrameSource.FrameDescription;
+
+      // Init infr buffer
+      InfraredFrame frame = Infrared = new InfraredFrame();
+      frame.Width = description.Width;
+      frame.Height = description.Height;
+      frame.Pixels = new ushort[description.LengthInPixels];
+      frame.Stamp = new Timestamp();
+
+      AddOnManager.GetInstance().InitFrame(Name, frame);
+      Log(frame.ToString());
+
+      // Start Watch
+      InfraredWatch = new StopwatchAvg();
+    }
+
+    private void HandleInfraredFrame(InfraredFrameReference reference) {
+      if (Task.StandBy) { InfraredWatch.Reset(); return; }
+
+      InfraredWatch.Again();
+      using (var frame = reference.AcquireFrame()) {
+        if (frame == null) return;
+
+        frame.CopyFrameDataToArray(Infrared.Pixels);
+        Infrared.Stamp.Time = System.DateTime.Now;
+      }
+      InfraredWatch.Stop();
     }
 
     // ------------------------------------------
     //  COLOR
     // ------------------------------------------
 
-    private FrameDescription colorDesc = null;
-    public byte[] ColorDataRaw { get; set; }
-    public int ColorWidth, ColorHeight;
-    public ColorImageFormat ColorFormat { get; set; }
-    public Timestamp ColorStamp { get; set; }
+    private ColorFrame Color = null;
     public StopwatchAvg ColorWatch = new StopwatchAvg();
+    public ColorImageFormat ColorFormat { get; set; }
 
     private void StartColorStream() {
-      // Get frame description for the color output
-      colorDesc = Sensor.ColorFrameSource.FrameDescription;
+      // Get frame description for the infr output
+      var description = Sensor.ColorFrameSource.FrameDescription;
 
-      // Init color buffer
-      ColorWidth = colorDesc.Width;
-      ColorHeight = colorDesc.Height;
-      ColorDataRaw = new byte[colorDesc.LengthInPixels * 4];
-      ColorStamp = new Timestamp();
+      // Init infr buffer
+      ColorFrame frame = Color = new ColorFrame();
+      frame.Width = description.Width;
+      frame.Height = description.Height;
+      frame.Pixels = new byte[description.LengthInPixels * 4];
+      frame.Stamp = new Timestamp();
+      frame.Fps = 15;
 
-      AddOnManager.GetInstance().InitColorFrame(Name, ColorDataRaw, ColorStamp, ColorWidth, ColorHeight, 15);
-      Log("ColorWidth: " + ColorWidth + " ColorHeight: " + ColorHeight);
+      AddOnManager.GetInstance().InitFrame(Name, frame);
+      Log(frame.ToString());
+
+      // Start Watch
+      ColorWatch = new StopwatchAvg();
     }
 
     private void HandleColorFrame(ColorFrameReference reference) {
       if (Task.StandBy) { ColorWatch.Reset(); return; }
 
       ColorWatch.Again();
-      using (ColorFrame colorFrame = reference.AcquireFrame()) {
-        if (colorFrame == null) {
-          ColorWatch.Stop(); return;
-        }
-        
+      using (var frame = reference.AcquireFrame()) {
+        if (frame == null) return;
+
         // Copy data to array based on image format
-        if (colorFrame.RawColorImageFormat == ColorImageFormat.Bgra) {
-          colorFrame.CopyRawFrameDataToArray(ColorDataRaw);
+        if (frame.RawColorImageFormat == ColorImageFormat.Bgra) {
+          frame.CopyRawFrameDataToArray(Color.Pixels);
         } else {
-          colorFrame.CopyConvertedFrameDataToArray(ColorDataRaw, ColorImageFormat.Bgra);
+          frame.CopyConvertedFrameDataToArray(Color.Pixels, ColorImageFormat.Bgra);
         }
-        
-        ColorStamp.Time = System.DateTime.Now;
+
+        Color.Stamp.Time = System.DateTime.Now;
       }
       ColorWatch.Stop();
     }
@@ -280,162 +324,124 @@ namespace net.encausse.sarah.kinect2 {
     //  BODY INDEX
     // -----------------------------------------
 
-    
-    private FrameDescription bodyIndexDesc = null;
-    public int BodyIndexWidth, BodyIndexHeight;
-    public Timestamp BodyIndexStamp { get; set; }
+    private BodyIndexFrame BodyIndex = null;
     public StopwatchAvg BodyIndexWatch = new StopwatchAvg();
-    public byte[] BodyIndexData { get; set; }
 
     private void StartBodyIndexStream() {
-      // Get frame description for the index output
-      bodyIndexDesc = Sensor.BodyIndexFrameSource.FrameDescription;
+      // Get frame description for the infr output
+      var description = Sensor.BodyIndexFrameSource.FrameDescription;
 
-      // Init color buffer
-      BodyIndexWidth = bodyIndexDesc.Width;
-      BodyIndexHeight = bodyIndexDesc.Height;
-      BodyIndexStamp = new Timestamp();
-      BodyIndexData = new byte[bodyIndexDesc.LengthInPixels];
+      // Init infr buffer
+      BodyIndexFrame frame = BodyIndex = new BodyIndexFrame();
+      frame.Width = description.Width;
+      frame.Height = description.Height;
+      frame.Pixels = new byte[description.LengthInPixels];
+      frame.Stamp = new Timestamp();
 
-      Log("BodyIndexWidth: " + BodyIndexWidth + " BodyIndexHeight: " + BodyIndexHeight);
+      AddOnManager.GetInstance().InitFrame(Name, frame);
+      Log(frame.ToString());
+
+      // Start Watch
+      BodyIndexWatch = new StopwatchAvg();
     }
-
 
     private void HandleBodyIndexFrame(BodyIndexFrameReference reference) {
       if (Task.StandBy) { BodyIndexWatch.Reset(); return; }
 
       BodyIndexWatch.Again();
-      using (BodyIndexFrame indexFrame = reference.AcquireFrame()) {
-        if (indexFrame == null) {
-          BodyIndexWatch.Stop(); return;
-        }
-        indexFrame.CopyFrameDataToArray(BodyIndexData);
+      using (var frame = reference.AcquireFrame()) {
+        if (frame == null) return;
+
+        frame.CopyFrameDataToArray(BodyIndex.Pixels);
         /*
-        using (Microsoft.Kinect.KinectBuffer bodyIndexBuffer = indexFrame.LockImageBuffer()) {
-          IntPtr ptr = bodyIndexBuffer.UnderlyingBuffer;
-          RefreshBodyArea(ptr, bodyIndexBuffer.Size);
+        using (Microsoft.Kinect.KinectBuffer buffer = indexFrame.LockImageBuffer()) {
+          IntPtr ptr = buffer.UnderlyingBuffer;
+          RefreshBodyArea(ptr, buffer.Size);
         }
         */
-        BodyIndexStamp.Time = System.DateTime.Now;
+        BodyIndex.Stamp.Time = System.DateTime.Now;
       }
       BodyIndexWatch.Stop();
     }
-
 
     // ------------------------------------------
     //  BODY
     // -----------------------------------------
 
-    public IList<Body> Bodies { get; set; }
-    public List<NBody> BodyData { get; set; }
-    public Timestamp BodyStamp { get; set; }
+    private BodyFrame Body = null;
     public StopwatchAvg BodyWatch = new StopwatchAvg();
 
     private void StartBodyStream() {
-      // Init body buffer
-      Bodies = new Body[6];
-      BodyData = new List<NBody>(6);
-      BodyStamp = new Timestamp();
-      KinectManager.GetInstance().InitBodyFrame(Name, Bodies, BodyStamp);
-      AddOnManager.GetInstance().InitBodyFrame(Name, BodyData, BodyStamp, ColorWidth, ColorHeight);
+
+      // Init infr buffer
+      BodyFrame frame = Body = new BodyFrame();
+      frame.Width   = Color.Width;
+      frame.Height  = Color.Height;
+      frame.RawData = new Body[6]; // FIXME
+      frame.Bodies  = new List<NBody>(6);
+      frame.Stamp   = new Timestamp();
+
+      AddOnManager.GetInstance().InitFrame(Name, frame);
+      Log(frame.ToString());
+
+      // Start Watch
+      BodyWatch = new StopwatchAvg();
     }
 
     private void HandleBodyFrame(BodyFrameReference reference) {
       if (Task.StandBy) { BodyWatch.Reset(); return; }
 
       BodyWatch.Again();
-      using (BodyFrame bodyFrame = reference.AcquireFrame()) {
-        if (bodyFrame == null) return;
+      using (var frame = reference.AcquireFrame()) {
+        if (frame == null) return;
 
         // The first time GetAndRefreshBodyData is called, Kinect will allocate each Body in the array.
         // As long as those body objects are not disposed and not set to null in the array,
         // those body objects will be re-used.
-        bodyFrame.GetAndRefreshBodyData(Bodies);
-        BodyStamp.Time = System.DateTime.Now;
-        RefreshBodyData(Bodies);
+        var tmp = (IList<Body>)Body.RawData;
+        frame.GetAndRefreshBodyData(tmp);
+        Body.Stamp.Time = System.DateTime.Now;
+        RefreshBodyData(Body);
       }
       BodyWatch.Stop();
     }
 
     private ICollection<NBody> cache = new List<NBody>();
-    private void RefreshBodyData(IList<Body> bodies){
+    private void RefreshBodyData(BodyFrame frame){
       cache.Clear();
-      foreach (var body in bodies) {
+      foreach (var body in (IList<Body>) frame.RawData) {
         if (!body.IsTracked) { continue; }
-        RefreshBodyData(body);
-      }
-      lock (BodyData) {
-        BodyData.Clear(); 
-        BodyData.AddRange(cache);
-      }
-    }
 
-    private void RefreshBodyData(Body body){
-      foreach (var nbody in BodyData) {
-        if ((ulong)nbody.TrackingId != body.TrackingId) { continue; }
-        RefreshBodyData(body, nbody); return;
+        NBody nbody = frame.Find(body.TrackingId);
+        if (nbody == null) {
+          nbody = new NBody(body.TrackingId, frame.Width, frame.Height);
+        }
+
+        cache.Add(nbody);
+        RefreshBodyData(body, nbody);
       }
-      RefreshBodyData(body, new NBody(body.TrackingId));
+
+      lock (frame.Bodies) {
+        frame.Bodies.Clear();
+        frame.Bodies.AddRange(cache);
+      }
     }
 
     private void RefreshBodyData(Body body, NBody nbody) {
-      cache.Add(nbody);
-
       // Joints
       foreach(var joint in body.Joints.Values){
         var ntype  = ResolveJointType(joint.JointType);
         var njoint = nbody.GetJoint(ntype);
         var point  = coordinateMapper.MapCameraPointToColorSpace(joint.Position);
         
-        // Hack 
-        var nudge = ntype == NJointType.Head ? 50 : 0;
-
-
         njoint.Tracking = ResolveTrackingState(joint.TrackingState);
+        njoint.SetPosition2D(point.X, point.Y);
         njoint.SetPosition3D(joint.Position.X, joint.Position.Y, joint.Position.Z);
-        njoint.SetPosition2D(point.X, point.Y + nudge);
-
-        if (  njoint.Type == NJointType.Head 
-           || njoint.Type == NJointType.HandRight 
-           || njoint.Type == NJointType.HandLeft) {
-          njoint.SetJointRadius(ComputeJointRadius(joint));
-        }
       }
 
       // Misc
       nbody.Tracking = NTrackingState.Tracked;
     }
-
-    // DepthArea = (avgDepth * inverseFocalLength)² * pixelCount
-    // inverseFocalLength = 0.0027089166
-
-    private int ComputeJointRadius(Joint joint) {
-      if (joint.TrackingState == TrackingState.NotTracked) { return 0; }
-      var pos = coordinateMapper.MapCameraPointToDepthSpace(joint.Position);
-      var x0 = (int) pos.X; var y0 = (int) pos.Y;
-      if (x0 + y0 * DepthWidth > DepthData.Length) return 0;
-      var depth0 = DepthData[x0 + y0 * DepthWidth];
-
-      var x = ComputeJointRadius(x0, y0, depth0, DepthWidth, true);
-      var y = ComputeJointRadius(x0, y0, depth0, DepthWidth, false);
-
-      return (x0 - x) > (y0 - y) ? (x0 - x) * ColorWidth  / DepthWidth
-                                 : (y0 - y) * ColorHeight / DepthHeight;
-    }
-
-    private int ComputeJointRadius(int x0, int y0, int depth0, int width, bool onX) {
-      var k0 = onX ? x0 : y0;
-      var i = k0;
-      for (var cpt = 0; i > 0; i--) {
-        var depthI = onX ? DepthData[i + y0 * DepthWidth] 
-                         : DepthData[x0 + i * DepthWidth];
-        cpt = depth0 - depthI > 200 ? cpt + 1 : 0;
-        if (cpt >= 3) { return i; }
-        if (k0 - i > 100) { return k0; }
-      }
-      return k0;
-    }
-
 
     private NTrackingState ResolveTrackingState(TrackingState state) {
       switch (state) {

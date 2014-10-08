@@ -30,7 +30,7 @@ namespace net.encausse.sarah {
     void HandleMenuItem(ContextMenuStrip menu);
     void HandleSidebar(string device, StackPanel sidebar);
     void HandleSelection(string device, Rectangle rect);
-    void RepaintColorFrame(string device, byte[] bgra, int width, int height);
+    void RepaintColorFrame(string device, byte[] pixels, int width, int height);
     
     // Logs Management
     void Log(string msg);
@@ -60,8 +60,7 @@ namespace net.encausse.sarah {
     void AfterHTTPRequest(string qs, NameValueCollection parameters, IDictionary files);
 
     // Camera
-    void InitColorFrame(string device, byte[] data, Timestamp state, int width, int height, int fps);
-    void InitBodyFrame(string device, ICollection<NBody> data, Timestamp state, int width, int height);
+    void InitFrame(string device, DeviceFrame frame);
     void MotionDetected(string device, bool status);
 
     // Profile Management

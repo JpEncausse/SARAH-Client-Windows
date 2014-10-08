@@ -13,18 +13,6 @@ namespace net.encausse.sarah.face {
     public AddOn() : base() {
       Name = "FaceRecognition";
     }
-
-    // ------------------------------------------
-    //  LIFE CYCLE
-    // ------------------------------------------
-
-    public override void Dispose() {
-      foreach (var task in Tasks.Values) {
-        task.Dispose();
-      }
-      Tasks.Clear();
-      base.Dispose();
-    }
     
     // ------------------------------------------
     //  HTTP Management
@@ -65,53 +53,39 @@ namespace net.encausse.sarah.face {
     // -------------------------------------------
 
     public override void HandleSidebar(string device, StackPanel sidebar) {
-      if (!Tasks.ContainsKey(device+"_detect")) { return; }
-      Tasks[device + "_detect"].HandleSidebar(sidebar);
-
-      if (!Tasks.ContainsKey(device + "_reco")) { return; }
-      Tasks[device + "_reco"].HandleSidebar(sidebar);
+      if (sidebar.Name != "Sidebar") { return; }
+      base.HandleSidebar(device + "_detect", sidebar);
+      base.HandleSidebar(device + "_reco", sidebar);
     }
 
     public override void RepaintColorFrame(string device, byte[] bgra, int width, int height) {
-      if (!Tasks.ContainsKey(device + "_detect")) { return; }
-      Tasks[device + "_detect"].RepaintColorFrame(bgra, width, height);
-
-      if (!Tasks.ContainsKey(device + "_reco")) { return; }
-      Tasks[device + "_reco"].RepaintColorFrame(bgra, width, height);
+      base.RepaintColorFrame(device + "_detect", bgra, width, height);
+      base.RepaintColorFrame(device + "_reco", bgra, width, height);
     }
 
     // -------------------------------------------
     //  CAMERA
     // -------------------------------------------
 
-    public IDictionary<string, AbstractAddOnTask> Tasks = new Dictionary<string, AbstractAddOnTask>();
-
-    public override void InitColorFrame(string device, byte[] data, Timestamp stamp, int width, int height, int fps) {
-      base.InitColorFrame(device, data, stamp, width, height, fps);
-
-      var dueTime = TimeSpan.FromMilliseconds(200);
-      var itvDetect = TimeSpan.FromMilliseconds(ConfigManager.GetInstance().Find("face.detect", 100));
-      var itvRecognize = TimeSpan.FromMilliseconds(ConfigManager.GetInstance().Find("face.recognize", 500));
-
-      var helper = new FaceHelper(width, height);
-
-      var detect = new DetectTask(device, helper);
-      detect.SetColor(data, stamp, width, height, fps);
-      detect.Start(dueTime, itvDetect);
-      Tasks.Add(device + "_detect", detect);
-
-      var recognize = new RecognizeTask(device, helper);
-      recognize.SetColor(data, stamp, width, height, fps);
-      recognize.Start(dueTime, itvRecognize);
-      Tasks.Add(device + "_reco", recognize);
+    private FaceHelper helper;
+    public override void InitFrame(string device, DeviceFrame frame) {
+      if (helper == null) {
+        helper = new FaceHelper(frame.Width, frame.Height);
+      }
+      base.InitFrame(device + "_detect", frame);
+      base.InitFrame(device + "_reco", frame);
     }
 
-    public override void InitBodyFrame(string device, ICollection<NBody> data, Timestamp state, int width, int height) {
-      // By design, this function is called after InitColorFrame()
-      // so task should already exists !
+    public override AbstractAddOnTask NewTask(string device) {
+      var dueTime = TimeSpan.FromMilliseconds(200);
 
-      ((DetectTask)Tasks[device + "_detect"]).SetBodies(data);
-      ((RecognizeTask)Tasks[device + "_reco"]).SetBodies(data);
+      if (device.EndsWith("detect")) {
+        var interval = TimeSpan.FromMilliseconds(ConfigManager.GetInstance().Find("face.detect", 200));
+        return new DetectTask(dueTime, interval, helper);
+      } else {
+        var interval = TimeSpan.FromMilliseconds(ConfigManager.GetInstance().Find("face.recognize", 600));
+        return new RecognizeTask(dueTime, interval, helper);
+      }
     }
 
   }

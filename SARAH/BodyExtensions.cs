@@ -12,9 +12,14 @@ namespace net.encausse.sarah {
 
   public class NBody {
 
-    public Object TrackingId { get; set; }
-    public NBody(Object trackingId) {
+    public int Width = 0;
+    public int Height = 0;
+    public ulong TrackingId = 0;
+
+    public NBody(ulong trackingId, int width, int height) {
       TrackingId = trackingId;
+      Width = width;
+      Height = height;
 
       Joints[NJointType.SpineBase] = null;
       Joints[NJointType.SpineMid] = null;
@@ -54,7 +59,7 @@ namespace net.encausse.sarah {
         return Joints[ntype];
       }
       
-      var njoint = new NJoint(ntype);
+      var njoint = new NJoint(ntype, this);
       Joints[ntype] = njoint;
       return njoint;
     }
@@ -68,19 +73,27 @@ namespace net.encausse.sarah {
 
   public class NJoint {
 
-    public NJoint(NJointType type) { 
+    public NJoint(NJointType type, NBody body) { 
       Type = type;
+      Body = body;
     }
 
-    public NJointType     Type       { get; set; }
+    public NBody Body { get; set; }
+    public NJointType Type { get; set; }
     public NTrackingState Tracking;
     public Point Position2D = new Point(0, 0);
     public Point3D Position3D = new Point3D(0, 0, 0);
     public Rectangle Area = new Rectangle();
+
     public void SetPosition3D(double x, double y, double z) { 
       Position3D.X = x;
       Position3D.Y = y;
       Position3D.Z = z;
+
+      if (z <= 0) { return; }
+      if (Type == NJointType.Head || Type == NJointType.HandLeft || Type == NJointType.HandRight) {
+        SetJointRadius(0);
+      }
     }
 
     public void SetPosition2D(float x, float y) {
@@ -90,18 +103,36 @@ namespace net.encausse.sarah {
 
     public void SetJointRadius(int radius) {
 
-      // if (radius == 0) { rect.Width = 0; rect.Height = 0; }
-      if (radius == 0) { return; }
+      double depth = 0;
+      if (radius == 0) {
+        depth  = Position3D.Z;
+        depth  = 1 / (depth * depth);
+        radius = (int)(50 + 70 * depth);
+      }
 
       var x = Position2D.X - radius;
       var y = Position2D.Y - radius;
       var w = radius * 2;
       var h = radius * 2;
 
-      Area.X = (int)Math.Sqrt((x * x + Area.X * Area.X)/2);
-      Area.Y = (int)Math.Sqrt((y * y + Area.Y * Area.Y)/2);
-      Area.Width = (int)Math.Sqrt((w * w + Area.Width * Area.Width)/2);
-      Area.Height = (int)Math.Sqrt((h * h + Area.Height * Area.Height)/2);
+      if (Type == NJointType.Head) {
+        x -= 20; w += 40;
+        y -= 20; h += 80;
+      }
+
+      x = (int) Math.Sqrt((x * x + Area.X * Area.X) / 2);
+      y = (int) Math.Sqrt((y * y + Area.Y * Area.Y) / 2);
+      w = (int) Math.Sqrt((w * w + Area.Width * Area.Width) / 2);
+      h = (int) Math.Sqrt((h * h + Area.Height * Area.Height) / 2);
+
+      if (x + w > Body.Width || y + h > Body.Height || x < 0 || y < 0) {
+        x = 0; y = 0; w = 0; h = 0;
+      }
+
+      Area.X      = x;
+      Area.Y      = y;
+      Area.Width  = w;
+      Area.Height = h;
     }
 
     public bool IsTracked() {

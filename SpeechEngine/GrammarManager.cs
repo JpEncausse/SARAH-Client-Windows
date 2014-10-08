@@ -320,6 +320,7 @@ namespace net.encausse.sarah.speech {
 
       var doc  = XDocument.Parse(xml);
       for (var rule = doc.Root.FirstNode; rule != null; rule = rule.NextNode) {
+        if (rule is XComment) { continue; }
         XElement elem = (XElement) rule;
 
         var xId = elem.Attribute("id");

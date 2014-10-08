@@ -2,12 +2,16 @@
   <rule id="ruleTest" scope="public">
     <example>Veux-tu [really] faire un autre test [name] ?</example>
     <tag>$.action=new Object();</tag>
-      <item>Sarah</item>
+    <item>Sarah</item>
     <one-of>
-      <item>fait un test <tag>$.action.test="AX"; $.action._attributes.tts="c'est bien ça marche";</tag></item>
+      <item>fait un test <tag>$.action.test="AX";</tag></item>
       <item>encore un autre test deux<tag>$.action.test="A2";</tag></item>
       <item>peux tu me faire un test <tag>$.action.test="A3";</tag></item>
     </one-of>
-    <tag>$.action._attributes.uri="http://127.0.0.1:8080/sarah/test";</tag>
+    <one-of>
+      <item>maintenant<tag>$.action.test2="ZZ";</tag></item>
+      <item>demain<tag>$.action.test2="VV";</tag></item>
+    </one-of>
+    <tag>$.action._attributes.uri="http://127.0.0.1:8080/sarah/test?test3=pp";</tag>
   </rule>
 </grammar>

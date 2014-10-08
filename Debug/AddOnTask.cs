@@ -1,15 +1,17 @@
 ﻿using System;
+using System.IO;
 using System.Drawing;
 using System.Drawing.Imaging;
 
 using Emgu.CV;
 using Emgu.CV.Structure;
-using System.IO;
+
 
 namespace net.encausse.sarah.debug {
   public class AddOnTask : AbstractAddOnTask {
 
-    public AddOnTask(string device) : base(device) {
+    public AddOnTask(TimeSpan dueTime, TimeSpan interval)
+      : base(dueTime, interval) {
       Name = "Debug";
     }
 
@@ -19,6 +21,7 @@ namespace net.encausse.sarah.debug {
 
     protected override void InitTask() { }
     protected override void DoTask() { }
+    
 
     // -------------------------------------------
     //  PICTURE
@@ -36,10 +39,10 @@ namespace net.encausse.sarah.debug {
       if (path == null) { return TakePicture(); }
       if (File.Exists(path)) { File.Delete(path); }
 
-      var factor = Width / ConfigManager.GetInstance().Find("debug.resize", Width); ;
-      var frame = new Image<Bgra, Byte>(Width, Height);
-      frame.Bytes = Color;
-      frame = frame.Resize(Width / factor, Height / factor, Emgu.CV.CvEnum.INTER.CV_INTER_CUBIC);
+      var factor = Color.Width / ConfigManager.GetInstance().Find("debug.resize", Color.Width);
+      var frame = new Image<Bgra, Byte>(Color.Width, Color.Height);
+      frame.Bytes = Color.Pixels;
+      frame = frame.Resize(Color.Width / factor, Color.Height / factor, Emgu.CV.CvEnum.Inter.Cubic);
       frame.Save(path);
 
       return path;

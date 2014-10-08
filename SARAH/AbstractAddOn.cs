@@ -34,9 +34,6 @@ namespace net.encausse.sarah {
       Host.Log(this, "Setup");
     }
 
-    public virtual void Dispose() {
-      Host.Log(this, "Dispose");
-    }
 
     public virtual bool Ready() {
       Host.Log(this, "Ready");
@@ -48,9 +45,21 @@ namespace net.encausse.sarah {
     // ------------------------------------------
 
     public virtual void HandleMenuItem(ContextMenuStrip menu) { }
-    public virtual void HandleSidebar(string device, StackPanel sidebar) { }
-    public virtual void HandleSelection(string device, Rectangle rect) { }
-    public virtual void RepaintColorFrame(string device, byte[] bgra, int width, int height) { }
+
+    public virtual void HandleSidebar(string device, StackPanel sidebar) {
+      if (!Tasks.ContainsKey(device) || Tasks[device] == null) { return; }
+      Tasks[device].HandleSidebar(sidebar);
+    }
+
+    public virtual void HandleSelection(string device, Rectangle rect) {
+      if (!Tasks.ContainsKey(device) || Tasks[device] == null) { return; }
+      Tasks[device].HandleSelection(rect);
+    }
+
+    public virtual void RepaintColorFrame(string device, byte[] pixels, int width, int height) {
+      if (!Tasks.ContainsKey(device) || Tasks[device] == null) { return; }
+      Tasks[device].RepaintColorFrame(pixels, width, height);
+    }
     
 
     // ------------------------------------------
@@ -96,12 +105,6 @@ namespace net.encausse.sarah {
     //  Camera Management
     // ------------------------------------------
 
-    // Called 1st
-    public virtual void InitColorFrame(string device, byte[] data, Timestamp stamp, int width, int height, int fps) { }
-
-    // Called 2nd
-    public virtual void InitBodyFrame(string device, ICollection<NBody> data, Timestamp stamp, int width, int height) { }
-
     public virtual void MotionDetected(string device, bool status) { }
 
     // ------------------------------------------
@@ -110,5 +113,40 @@ namespace net.encausse.sarah {
 
     public virtual void HandleProfile(string device, string key, object value) { }
     public virtual bool IsEngaged(string device) { return false; }
+
+    // -------------------------------------------
+    //  TASKS
+    // -------------------------------------------
+
+    public IDictionary<string, AbstractAddOnTask> Tasks = new Dictionary<string, AbstractAddOnTask>();
+
+    public virtual void Dispose() {
+      Host.Log(this, "Dispose");
+      foreach (var task in Tasks.Values) {
+        task.Dispose();
+      }
+      Tasks.Clear();
+    }
+
+    public virtual void InitFrame(string device, DeviceFrame frame) {
+      if (Tasks.ContainsKey(device)) {
+        Tasks[device].AddFrame(frame);
+        return;
+      }
+
+      var task = NewTask(device);
+      if (task == null) { return; }
+
+      task.Device = device;
+      task.AddFrame(frame);
+      task.Start();
+
+      Tasks.Add(device, task);
+    }
+
+    public virtual AbstractAddOnTask NewTask(string device) {
+      return null;
+    }
+
   }
 }

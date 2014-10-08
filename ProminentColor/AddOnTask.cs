@@ -3,8 +3,9 @@
 namespace net.encausse.sarah.color {
   public class AddOnTask : AbstractAddOnTask {
 
-    public AddOnTask(string device) : base(device) {
-        Name = "Color";
+    public AddOnTask(TimeSpan dueTime, TimeSpan interval)
+      : base(dueTime, interval) {
+      Name = "Color";
     }
 
     // -------------------------------------------
@@ -18,7 +19,7 @@ namespace net.encausse.sarah.color {
 
     public RGB RGB { get; set; }
     protected override void DoTask() {
-      var rgb = helper.GetMostProminentColor(this.Color);
+      var rgb = helper.GetMostProminentColor(Color.Pixels);
       if (RGB == null || rgb.r > 50 && rgb.g > 50 && rgb.b > 50) { RGB = rgb; }
     }
 

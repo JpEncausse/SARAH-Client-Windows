@@ -21,10 +21,6 @@ namespace net.encausse.sarah.os {
       OSManager.GetInstance();
     }
 
-    public override void Dispose() {
-      base.Dispose();
-    }
-
     // ------------------------------------------
     //  HTTP Management
     // ------------------------------------------

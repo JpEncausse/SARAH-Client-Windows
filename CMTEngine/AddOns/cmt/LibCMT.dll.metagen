@@ -1,0 +1,30 @@
+ImageRuntimeVersion: v4.0.30319
+Assembly LibCMT, Version=0.0.*, Culture=Langue indifférente (Pays indifférent): 
+	hash=SHA1, flags=PublicKey
+Assembly mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089: 
+	hash=None, flags=None
+Assembly Emgu.CV, Version=2.9.0.1922, Culture=neutral, PublicKeyToken=7281126722ab4438: 
+	hash=None, flags=None
+Assembly Emgu.Util, Version=2.9.0.1922, Culture=neutral, PublicKeyToken=7281126722ab4438: 
+	hash=None, flags=None
+Assembly System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089: 
+	hash=None, flags=None
+Assembly System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089: 
+	hash=None, flags=None
+Assembly System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a: 
+	hash=None, flags=None
+Assembly System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a: 
+	hash=None, flags=None
+Class SharpCMT: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
+    Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
+  Interfaces:
+    System.IDisposable
+  Methods:
+    initialise(Image`2, ValueType PointF IsBoxed, ValueType PointF IsBoxed): PrivateScope, Public, HideBySig
+    processFrame(Image`2): PrivateScope, Public, HideBySig
+    topLeft(): PrivateScope, Public, HideBySig
+    topRight(): PrivateScope, Public, HideBySig
+    bottomRight(): PrivateScope, Public, HideBySig
+    bottomLeft(): PrivateScope, Public, HideBySig
+    trackedKeypoints(): PrivateScope, Public, HideBySig
+    Dispose(): PrivateScope, Public, Final, Virtual, HideBySig

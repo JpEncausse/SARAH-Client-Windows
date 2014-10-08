@@ -86,33 +86,5 @@ namespace net.encausse.sarah.kinect1 {
       return true;
     }
 
-    // -------------------------------------------
-    //  PLUGIN MANAGER 
-    // -------------------------------------------
-
-    public void InitDepthFrame(string device, short[] data, Timestamp state, int width, int height, int min, int max) {
-      foreach (IAddOn addon in AddOnManager.GetInstance().AddOns) {
-        if (addon is IAddOnKinect) {
-          ((IAddOnKinect)addon).InitDepthFrame(device, data, state, width, height, min, max);
-        }
-      }
-    }
-
-    public void InitDepthFrame(string device, DepthImagePixel[] pixels, short[] data, Timestamp stamp, int width, int height, int min, int max) {
-      foreach (IAddOn addon in AddOnManager.GetInstance().AddOns) {
-        if (addon is IAddOnKinect){
-          ((IAddOnKinect)addon).InitDepthFrame(device, pixels, data, stamp, width, height, min, max);
-        }
-      }
-    }
-
-    public void InitSkeletonFrame(string device, Skeleton[] data, Timestamp stamp, int width, int height) {
-      foreach (IAddOn addon in AddOnManager.GetInstance().AddOns) {
-        if (addon is IAddOnKinect) {
-          ((IAddOnKinect)addon).InitSkeletonFrame(device, data, stamp, width, height);
-        }
-      }
-    }
-
   }
 }

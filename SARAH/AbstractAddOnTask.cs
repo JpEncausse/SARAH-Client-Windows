@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -9,14 +11,18 @@ namespace net.encausse.sarah {
   public abstract class AbstractAddOnTask : IDisposable {
 
     protected CancellationTokenSource Source { get; set; }
-    protected String Device { get; set; }
-    protected String Name { get; set; }
+    public String Device { get; set; }
+    public String Name { get; set; }
 
-    public AbstractAddOnTask(string device) {
-      this.Device = device;
+
+    private TimeSpan dueTime;
+    private TimeSpan interval;
+    public AbstractAddOnTask(TimeSpan dueTime, TimeSpan interval) {
+      this.dueTime = dueTime;
+      this.interval = interval;
     }
-
-    public void Start(TimeSpan dueTime, TimeSpan interval) {
+    
+    public void Start() {
       this.Source = new CancellationTokenSource();
       AsyncTask(dueTime, interval, Source.Token);
     }
@@ -26,17 +32,20 @@ namespace net.encausse.sarah {
         Source.Cancel();
         Source = null;
       }
+      EndTask();
     }
 
-    protected byte[] Color;
-    protected Timestamp Stamp;
-    protected int Width, Height, Fps;
-    public void SetColor(byte[] data, Timestamp stamp, int width, int height, int fps) {
-      Color = data;
-      Stamp = stamp;
-      Width  = width;
-      Height = height;
-      Fps = fps;
+    protected ColorFrame Color = null;
+    protected BodyFrame  Body  = null;
+    protected DepthFrame Depth = null;
+
+    protected List<DeviceFrame> Frames = new List<DeviceFrame>();
+    public void AddFrame(DeviceFrame frame){
+      Frames.Add(frame);
+
+      if (frame is ColorFrame) { Color = (ColorFrame)frame; }
+      if (frame is BodyFrame)  { Body  = (BodyFrame)frame; }
+      if (frame is DepthFrame) { Depth = (DepthFrame)frame; }
     }
 
     // -------------------------------------------
@@ -44,19 +53,19 @@ namespace net.encausse.sarah {
     // ------------------------------------------
 
     protected void Log(string msg) {
-      SARAH.GetInstance().Log(Device, msg);
+      SARAH.GetInstance().Log(Name + "|" + Device, msg);
     }
 
     protected void Debug(string msg) {
-      SARAH.GetInstance().Debug(Device, msg);
+      SARAH.GetInstance().Debug(Name + "|" + Device, msg);
     }
 
     protected void Error(string msg) {
-      SARAH.GetInstance().Error(Device, msg);
+      SARAH.GetInstance().Error(Name + "|" + Device, msg);
     }
 
     protected void Error(Exception ex) {
-      SARAH.GetInstance().Error(Device, ex);
+      SARAH.GetInstance().Error(Name + "|" + Device, ex);
     }
 
     // -------------------------------------------
@@ -93,13 +102,13 @@ namespace net.encausse.sarah {
         }
 
         // Check if Frame has been updated
-        if (Stamp != null) {
-          if (Stamp.Time == Timestamp) {
+        if (Color.Stamp != null) {
+          if (Color.Stamp.Time == Timestamp) {
             TaskWatch.Reset();
             await Task.Delay(interval, token);
             continue;
           }
-          Timestamp = Stamp.Time;
+          Timestamp = Color.Stamp.Time;
         }
 
         // Timestamp data
@@ -107,7 +116,9 @@ namespace net.encausse.sarah {
 
         // Do Job
         try { DoTask(); }
-        catch (Exception ex) { Error(ex); }
+        catch (Exception ex) { 
+          Error(ex); 
+        }
 
         TaskWatch.Stop();
 
@@ -136,9 +147,12 @@ namespace net.encausse.sarah {
 
     private TextBlock watch;
     public virtual void HandleSidebar(StackPanel sidebar) {
+      if (sidebar.Name != "Sidebar") { return; }
       watch = new TextBlock { FontWeight = FontWeights.Bold };
       var ticks = (StackPanel)System.Windows.LogicalTreeHelper.FindLogicalNode(sidebar, "Ticks");
       ticks.Children.Add(watch);
     }
+
+    public virtual void HandleSelection(Rectangle rect) {  }
   }
 }
