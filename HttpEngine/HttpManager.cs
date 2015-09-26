@@ -187,19 +187,36 @@ namespace net.encausse.sarah.http {
     public void StartHttpServer() {
 
       int port = ConfigManager.GetInstance().Find("http.local.port", 8888);
-      IPAddress address = GetIpAddress();
+      List<IPAddress> addresses;
 
-      // 192.168.0.x
-      if (address != null) {
+      string configIps = ConfigManager.GetInstance().Find("http.local.ip", "");
+      if (String.IsNullOrWhiteSpace(configIps)) {
+         addresses.Add(GetIpAddress());
+      }
+      else {
+        string[] ips = configIps.Split(",");
         try {
-          http = new HttpServer();
-          http.EndPoint = new IPEndPoint(address, port);
-          http.Start();
-          http.RequestReceived += this.http_RequestReceived;
-          Log("Starting Server: http://" + http.EndPoint + "/");
-        } catch (Exception ex) {
-          http = null;
+          foreach(string ip in ips) {
+            addresses.Add(IPAddress.Parse(ip));
+          }
+        } catch(Exception ex) {
           Log("Exception: " + ex.Message);
+        }
+      }
+
+      foreach(IPAddress address in addresses) {
+        // 192.168.0.x
+        if (address != null) {
+          try {
+            http = new HttpServer();
+            http.EndPoint = new IPEndPoint(address, port);
+            http.Start();
+            http.RequestReceived += this.http_RequestReceived;
+            Log("Starting Server: http://" + http.EndPoint + "/");
+          } catch (Exception ex) {
+            http = null;
+            Log("Exception: " + ex.Message);
+          }
         }
       }
 
